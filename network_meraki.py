@@ -102,12 +102,14 @@ def create_network(name, network_type, network_tags):
 
 # Delete a existing network
 def delete_network(delete_name):
+    payload = ''
     get_values = requests.get(url, headers=headers1)
     get_values = get_values.json()
     return_element = next(item for item in get_values if item["name"] == delete_name)
     return_id = return_element['id']
-    url_delete = url + return_id
-    response = requests.delete(url_delete, headers=headers1)
+    url_delete = device_url + return_id
+    print(url_delete)
+    response = requests.delete(url_delete,data=payload, headers=headers1)
     print(response)
 
 
@@ -137,5 +139,6 @@ elif operation_input == 3:
 elif operation_input == 5:
     network_name = input("Name the network \n")
     list_devices(network_name)
+
 
 
