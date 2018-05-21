@@ -1,10 +1,12 @@
 import requests
 import json
 import texttable as tt
+import random
 
-api_key = "34f00cc84b8219c52bb911c80ddfde63df065082"
+api_key = "715d7d0842994b871b4d010f9abe2f9c701ffb05 "
 base_url = "https://dashboard.meraki.com/api/v0/organizations/"
 device_url = "https://dashboard.meraki.com/api/v0/networks/"
+subnet_mask = random.choice(["/16","/18","/20","/21","/22","/23","/24","/28"])
 
 print("1.Create a network device")
 print("2.List network devices")
@@ -12,6 +14,7 @@ print("3.Delete a network")
 print("4.List all Vlans in a network")
 print("5.List all devices in a network")
 print("6.Add a Vlan to a network")
+print("7.Delete a Vlan from a network")
 operation_input = int(input("Enter your operation \n"))
 
 # Headers
@@ -33,7 +36,7 @@ def list_network():
     display_network(get_requests)
 
 
-# Display in Table
+# Display networks
 def display_network(list_json):
     tab = tt.Texttable()
     headings = ['id', 'organization Id', 'name', 'timeZone', 'tags', 'type']
@@ -119,31 +122,34 @@ def create_network(name, network_type, network_tags):
         "tags": network_tags,
         "type": network_type
     }
-
+    
     response = requests.post(url, json.dumps(network_obj), headers=headers1)
     response = response.json()
     print(response)
+    list_network() 
 
-
-# Delete a existing network
-def delete_network(delete_name):
-    payload = ''
-    get_values = requests.get(url, headers=headers1)
-    get_values = get_values.json()
-    return_element = next(item for item in get_values if item["name"] == delete_name)
-    return_id = return_element['id']
-    url_delete = device_url + return_id
-    print(url_delete)
-    response = requests.delete(url_delete,data=payload, headers=headers1)
-    print(response)
-
-
-# List all devices and vlans in a network
-def list_devices(network_name,a):
+# Return network id from network name
+def netword_id_return(network_name):
     get_devices = requests.get(url, headers=headers1)
     get_devices = get_devices.json()
     return_element = next(item for item in get_devices if item["name"] == network_name)
     return_id = return_element['id']
+    return return_id
+
+# Delete a existing network
+def delete_network(delete_name):
+    payload = ''
+    return_id = netword_id_return(delete_name)
+    url_delete = device_url + return_id
+    print(url_delete)
+    response = requests.delete(url_delete,data=payload, headers=headers1)
+    print(response.json())
+
+
+# List all devices and vlans in a network
+def list_devices(network_name,a):
+    
+    return_id = netword_id_return(network_name)
     if(a == "5"):
        url_devices = device_url + return_id + "/devices"
     else:
@@ -157,24 +163,32 @@ def list_devices(network_name,a):
 
 # Create a new vlan in a network
 def create_vlan(network_name):
-    get_devices = requests.get(url, headers=headers1)
-    get_devices = get_devices.json()
-    n_id = input("Enter id: \n")
-    name = input("Enter name: \n")
-    ip = input("Enter ip: \n")
-    subnet = input("Enter subnet: \n")
+    n_id = random.randrange(0,999)
+    name = input("Enter name of vlan: \n")
+    ip = str(input("Enter ipaddress of vlan: \n"))
+    ip_split = ip.split(".")
+    ip_split[3] = "0"
+    subnet = ".".join(ip_split) + subnet_mask
     network_obj = {
         "id": n_id,
         "name": name,
         "applianceIp": ip,
         "subnet": subnet
     }
-    return_element = next(item for item in get_devices if item["name"] == network_name)
-    return_id = return_element['id']
+    return_id = netword_id_return(network_name)
     vlan_url = device_url + return_id + "/vlans"
     vlan = requests.post(vlan_url, json.dumps(network_obj), headers=headers1)
     response = vlan.json()
     print(response)
+    list_devices(network_name,a="6")
+
+# Delete a vlan from a network
+def delete_vlan(network_name,vlan_id):
+    return_id = netword_id_return(network_name)
+    vlan_url = device_url + return_id + "/vlans/" + vlan_id
+    vlan_delete = requests.delete(vlan_url, headers=headers1)
+    print(vlan_delete)
+    list_devices(network_name,a="6")
 
 
 # Main
@@ -184,18 +198,22 @@ if operation_input == 1:
     network_tags = input("Enter tags \n")
     create_network(name, network_type, network_tags)
 elif operation_input == 2:
-    list_network()
+    list_network()                    # List a network
 elif operation_input == 3:
-    delete_name = input("Name to delete: \n")
-    delete_network(delete_name)
+    delete_name = input("Name of the network to delete: \n")
+    delete_network(delete_name)       # To Delete a network
 elif operation_input == 4:
-    network_name = input("Name the network \n")
-    list_devices(network_name,a="4")
+    network_name = input("Name the network to list all the vlans in it \n")
+    list_devices(network_name,a="4")  # List all vlans in a network
 elif operation_input == 5:
-    network_name = input("Name the network \n")
-    list_devices(network_name,a="5")
+    network_name = input("Name the network to list all the devices in it \n")
+    list_devices(network_name,a="5")  # List all devices in a network
 elif operation_input == 6:
-    network_name = input("Name the network \n")
-    create_vlan(network_name)	
+    network_name = input("Name the network to add a vlan to it \n")
+    create_vlan(network_name)        # Add a vlan to a network
+elif operation_input == 7:
+    network_name = input("Name the network to remove a vlan from it \n")
+    vlan_id = input("Enter id of a vlan to delete \n")
+    delete_vlan(network_name,vlan_id)# Delete a Vlan from a network
 
 
