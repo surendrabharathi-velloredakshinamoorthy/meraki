@@ -3,7 +3,7 @@ import json
 import texttable as tt
 import random
 
-api_key = "715d7d0842994b871b4d010f9abe2f9c701ffb05 "
+api_key = "34f00cc84b8219c52bb911c80ddfde63df065082 "
 base_url = "https://dashboard.meraki.com/api/v0/organizations/"
 device_url = "https://dashboard.meraki.com/api/v0/networks/"
 subnet_mask = random.choice(["/16","/18","/20","/21","/22","/23","/24","/28"])
@@ -31,9 +31,12 @@ url = base_url + org_id + "/networks/"
 
 # List the network in an organisation
 def list_network():
-    get_requests = requests.get(url, headers=headers1)
-    get_requests = get_requests.json()
-    display_network(get_requests)
+    try:
+    	get_requests = requests.get(url, headers=headers1)
+    	get_requests = get_requests.json()
+    	display_network(get_requests)
+    except requests.exceptions.RequestException:
+    	print("Can't connect")
 
 
 # Display networks
@@ -138,14 +141,13 @@ def netword_id_return(network_name):
 
 # Delete a existing network
 def delete_network(delete_name):
-    payload = ''
     return_id = netword_id_return(delete_name)
     url_delete = device_url + return_id
     print(url_delete)
-    response = requests.delete(url_delete,data=payload, headers=headers1)
-    print(response.json())
+    response = requests.delete(url_delete, headers=headers1)
+    print(response.text)
 
-
+ 
 # List all devices and vlans in a network
 def list_devices(network_name,a):
     
@@ -209,7 +211,7 @@ elif operation_input == 5:
     network_name = input("Name the network to list all the devices in it \n")
     list_devices(network_name,a="5")  # List all devices in a network
 elif operation_input == 6:
-    network_name = input("Name the network to add a vlan to it \n")
+    network_name = input("Name the network to add a vlan to it \n")n  
     create_vlan(network_name)        # Add a vlan to a network
 elif operation_input == 7:
     network_name = input("Name the network to remove a vlan from it \n")
